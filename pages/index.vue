@@ -1,73 +1,19 @@
 <script setup lang="ts">
-import {MagnifyingGlassIcon,Cross1Icon} from '@radix-icons/vue'
+import {MagnifyingGlassIcon, Cross1Icon} from '@radix-icons/vue'
 import PostCard from "~/components/view/PostCard.vue";
-import {type Post, posts} from "~/posts";
+import {type Post} from "~/posts";
+import {useSearch} from "~/composables/useSearch";
+import {useInputHelper} from "~/composables/useInputHelper";
 
-const filteredPosts = computed(() => {
-  if (!debouncedTextSearch.value.trim()) {
-    return posts;
-  }
-  let filtered: Post[] = posts.filter((post: Post) => {
-    return (
-        post.title.toLowerCase().includes(debouncedTextSearch.value.toLowerCase()) ||
-        post.body.toLowerCase().includes(debouncedTextSearch.value.toLowerCase())
-    )
-  });
-  return filtered.map((post: Post) => {
-    if (!debouncedTextSearch.value.trim()) {
-      return post;
-    }
-    const regex = new RegExp(`(${debouncedTextSearch.value})`, 'gi');
 
-    let newPost: Post = {} as Post;
-    newPost.id = post.id
-    newPost.body = post.body.replace(regex,
-        '<span class="bg-red-700 text-white">$1</span>')
-    newPost.title = post.title.replace(regex,
-        '<span class="bg-red-700 text-white">$1</span>')
-    return newPost;
-  });
-})
-const textSearch = ref<string>('')
+
+const textSearchInput = ref<string>('')
 const debouncedTextSearch = ref<string>('')
-const postKey = ref<string>('')
 
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number = 500): (...args: Parameters<T>) => void {
-  let timer: NodeJS.Timeout | null;
+const {filteredPosts,clearSearch} = useSearch(debouncedTextSearch,textSearchInput)
+const {handleChangeTextSearch,postKey} = useInputHelper(debouncedTextSearch)
 
-  return function (this: any, ...args: Parameters<T>): void {
-    if (timer) {
-      clearTimeout(timer);
-    }
 
-    const context = this;
-
-    timer = setTimeout(() => {
-      fn.apply(context, args);
-    }, delay);
-  };
-}
-
-function handleInput(value: string) {
-  debouncedTextSearch.value = value;
-  postKey.value = generateUniqueId()
-}
-
-const debouncedHandleInput = debounce(handleInput, 300);
-
-function handleChangeTextSearch(event: Event) {
-  const target = event.target as HTMLInputElement;
-  debouncedHandleInput(target.value);
-}
-
-function generateUniqueId() {
-  return Math.random().toString(36).slice(2, 9);
-}
-const clearSearch = ()=>{
-  textSearch.value = ''
-  debouncedTextSearch.value = ''
-  postKey.value = generateUniqueId()
-}
 </script>
 
 <template>
@@ -77,11 +23,14 @@ const clearSearch = ()=>{
       <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
         <MagnifyingGlassIcon class="size-6 text-muted-foreground"/>
       </span>
-      <Input v-model="textSearch" @input="handleChangeTextSearch" id="search" type="text" placeholder="Search..."
+      <Input v-model="textSearchInput" @input="handleChangeTextSearch" id="search" type="text" placeholder="Search..."
              class="pl-10"/>
       <span class="absolute end-0 inset-y-0 flex items-center justify-center px-2">
         <Cross1Icon class="size-3 text-muted-foreground" @click="clearSearch"/>
       </span>
+    </div>
+    <div class="flex my-12" v-if="textSearchInput && filteredPosts.length > 0">
+      <span class="font-bold mr-1">{{filteredPosts.length}} Posts </span> were found
     </div>
     <div v-if="filteredPosts.length === 0" class="flex justify-center items-center h-96">
       <h3 class="text-2xl"> No Posts found</h3>
