@@ -1,5 +1,6 @@
 # Search Text
-
+Search box where users can type in keywords or phrases,
+and returns results with the text being searched for highlighted
 ## Clone
 
 Clone from public repository
